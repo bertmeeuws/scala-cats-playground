@@ -1,4 +1,4 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/bertmeeuws/Desktop/Side-Projects/CatsPlayground/src/main/scala/Main.scala:122:5: not found: value getTemperatureByCoordinates[0m
-[0m[[0m[31merror[0m] [0m[0m    getTemperatureByCoordinates[MyEither](44 -> 93)[0m
-[0m[[0m[31merror[0m] [0m[0m    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/bertmeeuws/Desktop/Side-Projects/CatsPlayground/src/main/scala/Main.scala:217:39: could not find implicit value for parameter BB: cats.Show[Person][0m
+[0m[[0m[31merror[0m] [0m[0m    println(parsePerson("12", "Bert").show)[0m
+[0m[[0m[31merror[0m] [0m[0m                                      ^[0m
 [0m[[0m[31merror[0m] [0m[0mone error found[0m

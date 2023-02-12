@@ -1,10 +1,12 @@
-import cats.{Applicative, ApplicativeError, Functor, MonadError, Monoid}
-import cats.data.Nested
+import cats.arrow.Arrow
+import cats.data.Validated.{Invalid, Valid}
+import cats.{Applicative, ApplicativeError, Functor, MonadError, Monoid, Show}
+import cats.data.{Kleisli, Nested, NonEmptyList, Validated}
 import cats.implicits._
-import cats.data.Validated
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+
 
 
 
@@ -135,6 +137,144 @@ object Main {
     println(getTemperatureFromByCoordinatesAlternate((25,70)))
 
     println("*"*50)
+
+    def combine[F[_, _]: Arrow, A, B, C](fab: F[A, B], fac: F[A, C]): F[A, (B, C)] =
+      Arrow[F].lift((a: A) => (a, a)) >>> (fab *** fac)
+
+
+    val mean: List[Int] => Double =
+      combine((_: List[Int]).sum, (_: List[Int]).size) >>> { case (x, y) => x.toDouble / y }
+
+    val variance: List[Int] => Double =
+    // Variance is mean of square minus square of mean
+      combine(((_: List[Int]).map(x => x * x)) >>> mean, mean) >>> { case (x, y) => x - y * y }
+
+    val meanAndVar: List[Int] => (Double, Double) = combine(mean, variance)
+
+    val mean1 = meanAndVar(List(1, 2, 3, 4))
+
+    println(mean1)
+
+    println("*"*50)
+
+
+    val headK = Kleisli((_: List[Int]).headOption)
+    val lastK = Kleisli((_: List[Int]).lastOption)
+
+    println(headK(List(1,2,3)))
+
+    val headPlusLast = combine(headK, lastK) >>> Arrow[Kleisli[Option, *,*]].lift(((_: Int) + (_: Int)).tupled)
+
+    val result = headPlusLast.run(List(2,3,4,6,8))
+
+    val result2 = headPlusLast.run(Nil)
+
+    println(result)
+    println(result2)
+
+    case class FancyFunction[A, B](run: A => (FancyFunction[A, B], B))
+
+    println("-+-"*25)
+    val eithers: List[Validated[NonEmptyList[String], Int]] = List(Valid(42), "dsqdqsd".invalidNel, "didqiqsdis".invalidNel, Valid(89))
+
+    println(eithers.sequence: Validated[NonEmptyList[String], List[Int]])
+
+
+    case class Name(value: String)
+    case class Age(value: Int)
+    case class Person(name: Name, age: Age)
+
+    def parse(s: String): Either[NonEmptyList[String], Int] = {
+      if (s.matches("-?[0-9]+")) Right(s.toInt)
+      else Left(NonEmptyList.one(s"$s is not a valid integer."))
+    }
+
+    def validateAge(a: Int): Either[NonEmptyList[String], Age] = {
+      if (a > 18) Right(Age(a))
+      else Left(NonEmptyList.one(s"$a is not old enough"))
+    }
+
+    def validateName(n: String): Either[NonEmptyList[String], Name] = {
+      if (n.length >= 8) Right(Name(n))
+      else Left(NonEmptyList.one(s"$n Does not have enough characters"))
+    }
+
+    //This is sick
+    def parsePerson(ageString: String, nameString: String) =
+      for {
+        age <- parse(ageString)
+        person <- (validateName(nameString), validateAge(age)).parMapN(Person)
+      } yield person
+
+    //Same as above
+
+    def parsePerson1(ageString: String, nameString: String) =
+      for {
+        age <- parse(ageString)
+        person <- (validateName(nameString).toValidated, validateAge(age).toValidated).mapN(Person).toEither
+      } yield person
+
+    implicit val showPerson: Show[Person] = Show.show { person => person.name.value}
+
+    println(parsePerson("22", "Berttttt").show)
+
+    val twice: Int => Int =
+      x => x * 2
+
+    val countCats: Int => String =
+      x => if (x == 1) "1 cat" else s"$x cats"
+
+    val twiceAsManyCats: Int => String =
+      twice.andThen(countCats) // equivalent to: countCats compose twice
+
+    println(twiceAsManyCats(1))
+
+
+
+
+
+    case class Car(name: "Bert", age: 22)
+
+
+    object JSON {
+
+    }
+
+
+    val car1 = Car("Bert",22)
+
+    trait Semigroup[A] {
+      def combine(a: A, Y: A):A
+    }
+
+    trait Monoid[A] extends Semigroup[A] {
+      def empty: A
+    }
+
+
+    trait Functor[F[_]] {
+      def map[A, B](fa: F[A])(f: A => B): F[B]
+    }
+
+  def do10xList(list: List[Int]): List[Int] = list.map(_ * 10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
