@@ -231,81 +231,33 @@ object Main {
 
 
 
+    val getUserId: Unit => Option[Int] = _ => 4.some
+    val ageByUserId: Int => Option[Int] = _ => 22.some
+    val getNameByAge: Int => Option[String] = x => s"Bertje $x".some
+
+    val done = for {
+      userId <- getUserId()
+      age <- ageByUserId(userId)
+      name <- getNameByAge(age)
+    } yield name
+
+    val kleisli1: Kleisli[Option, Unit, Int] = Kleisli(getUserId)
+    val kleisli2: Kleisli[Option, Int, Int] = Kleisli(ageByUserId)
+    val kleisli3: Kleisli[Option, Int, String] = Kleisli(getNameByAge)
+
+    // >>> same as andThen
+    val allKleisli: Kleisli[Option, Unit, String] = kleisli1 >>> kleisli2 >>> kleisli3
+
+    // Other libraries provide andThenK, in cats we can do method overloading.
+    // Overloading Kleisli with >>> does not work
+    val allKleisliii: Kleisli[Option, Unit, String] = Kleisli(getUserId) andThen ageByUserId andThen getNameByAge
+
+    println(allKleisli)
 
 
-    case class Car(name: "Bert", age: 22)
 
 
-    object JSON {
-
-    }
-
-
-    val car1 = Car("Bert",22)
-
-    trait Semigroup[A] {
-      def combine(a: A, Y: A):A
-    }
-
-    trait Monoid[A] extends Semigroup[A] {
-      def empty: A
-    }
-
-
-
-
-
-    trait Functor[F[_]] {
-      def map[A, B](fa: F[A])(f: A => B): F[B]
-    }
-
-  def do10xList(list: List[Int]): List[Int] = list.map(_ * 10)
-
-  def do10xFGeneral[F[_]](mappablde: F[Int])(implicit functor: Functor[F]): F[Int] = functor.map(mappablde)(_ * 10)
-
-    trait Semigroupal[F[_]] {
-      def product[A, B](fa: F[A], fb: F[B]): F[(A, B)]
-    }
-
-    trait Apply[F[_]] extends Semigroupal[F] with Functor[F] {
-      def ap[A, B](fab: F[A => B], fa: F[A]): F[B]
-
-      def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] = {
-        val myFunction: A => B => (A, B) = (a: A) => (b: B) => (a, b)
-
-        //In order to change F[A] into a F[B] with a different data type, we need a functor.
-        // So we extends functor
-        val fab: F[B => (A, B)] = map(fa)(myFunction)
-
-        ap(fab, fb)
-      }
-
-      def mapN[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] = {
-        map(product(fa, fb)) {
-          case (a, b) => f(a, b)
-        }
-      }
-    }
-
-  trait Applicative[F[_]] extends Apply[F] {
-    def pure[A](a: A): F[A]
-
-    def ap[A,B](fa: F[A])(f: A => B): F[B] = {
-      ap(pure(f), fa)
-    }
-  }
-
-    trait FlatMap[F[_]] {
-      def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B]
-    }
-
-  trait Monad[F[_]] extends Applicative[F[_]] with FlatMap[F] {
-    def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B]
-  }
-
-    trait ApplicativeError[F[_], E] extends Applicative[F] {
-      def raiseError[A](error: E): F[A]
-    }
+    println(done)
 
 
 
